@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Konversi Nilai</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; padding: 20px; min-height: 100vh; }
+
+  h2 { text-align: center; color: #1a202c; font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+  .subtitle { text-align: center; color: #718096; font-size: 0.78rem; margin-bottom: 14px; }
+
+  .paste-section {
+    background: #fff; border: 2px dashed #bee3f8; border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  }
+  .paste-label { font-size: 0.78rem; font-weight: 600; color: #2b6cb0; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .paste-label .hint { font-weight: 400; color: #718096; font-size: 0.73rem; }
+  textarea#paste-area {
+    width: 100%; height: 72px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    padding: 8px 10px; font-size: 0.83rem; color: #2d3748; resize: vertical;
+    outline: none; font-family: inherit; background: #f7fafc;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  textarea#paste-area:focus { border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,0.15); background: #fff; }
+  .paste-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .btn-apply { background: #3182ce; color: #fff; border: none; border-radius: 7px; padding: 7px 18px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .btn-apply:hover { background: #2b6cb0; }
+  .paste-feedback { font-size: 0.75rem; color: #48bb78; font-weight: 600; display: none; }
+  .paste-feedback.error { color: #e53e3e; }
+
+  .stats-bar { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .stat-chip { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; color: #4a5568; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .stat-chip strong { display: block; font-size: 1rem; color: #2d3748; font-weight: 700; }
+
+  .table-wrapper { overflow-x: auto; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.09); background: #fff; }
+  table { width: 100%; border-collapse: collapse; min-width: 320px; }
+  thead tr { background: #2d3748; color: #fff; }
+  thead th { padding: 12px 14px; font-size: 0.8rem; font-weight: 600; text-align: center; letter-spacing: 0.4px; }
+  thead th:first-child { border-radius: 12px 0 0 0; }
+  thead th:last-child  { border-radius: 0 12px 0 0; }
+  tbody tr { border-bottom: 1px solid #edf2f7; transition: background 0.15s; }
+  tbody tr:hover { background: #f7fafc; }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 7px 10px; text-align: center; font-size: 0.85rem; color: #2d3748; }
+  td.num-cell { color: #a0aec0; font-size: 0.78rem; font-weight: 600; width: 44px; }
+  td.input-cell { width: 130px; }
+  td.result-cell { width: 130px; }
+
+  input[type="number"] {
+    width: 100%; padding: 6px 8px; border: 1.5px solid #e2e8f0; border-radius: 6px;
+    font-size: 0.85rem; color: #2d3748; text-align: center; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s; background: #f7fafc;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus { border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,0.15); background: #fff; }
+  input.just-filled { border-color: #48bb78 !important; background: #f0fff4 !important; }
+
+  .result-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-weight: 700; font-size: 0.82rem; min-width: 52px; }
+  .result-top { background: #ebf8ff; color: #2b6cb0; border: 1.5px solid #bee3f8; }
+  .result-mid { background: #f0fff4; color: #276749; border: 1.5px solid #c6f6d5; }
+  .result-empty { color: #cbd5e0; font-size: 0.78rem; }
+
+  .legend { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #4a5568; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-top { background: #4299e1; }
+  .dot-mid { background: #48bb78; }
+
+  .bottom-actions { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+
+  .btn-copy { background: #2d3748; color: #fff; border: none; border-radius: 8px; padding: 8px 22px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .btn-copy:hover { background: #1a202c; }
+  .btn-copy.copied { background: #276749; }
+
+  .btn-clear { background: #fff; border: 1.5px solid #e2e8f0; color: #e53e3e; border-radius: 8px; padding: 7px 22px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+  .btn-clear:hover { background: #fff5f5; border-color: #fc8181; }
+
+  .copy-feedback { font-size: 0.75rem; color: #276749; font-weight: 600; display: none; }
+</style>
+</head>
+<body>
+
+<h2>📊 Konversi Nilai</h2>
+<p class="subtitle">Masukkan nilai satu per satu — atau langsung paste dari spreadsheet</p>
+
+<div class="paste-section">
+  <div class="paste-label">
+    📋 Paste dari Spreadsheet
+    <span class="hint">— Salin kolom nilai dari Google Sheets / Excel, lalu paste di sini</span>
+  </div>
+  <textarea id="paste-area" placeholder="Paste nilai di sini (satu nilai per baris)&#10;Contoh:&#10;85&#10;92&#10;78&#10;..."></textarea>
+  <div class="paste-actions">
+    <button class="btn-apply" onclick="applyPaste()">✅ Terapkan</button>
+    <span class="paste-feedback" id="paste-feedback"></span>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-chip"><strong id="stat-count">0</strong>Data masuk</div>
+  <div class="stat-chip"><strong id="stat-max">—</strong>Nilai tertinggi</div>
+  <div class="stat-chip"><strong id="stat-min">—</strong>Nilai terendah</div>
+  <div class="stat-chip"><strong id="stat-avg">—</strong>Rata-rata hasil</div>
+</div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>#</th><th>Nilai Masukan</th><th>Skor Final</th></tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot dot-top"></div> Rank 1–10 → Skor 94–98</div>
+  <div class="legend-item"><div class="legend-dot dot-mid"></div> Rank 11–40 → Skor 80–93</div>
+</div>
+
+<div class="bottom-actions">
+  <button class="btn-copy" onclick="copyResults()">📋 Copy Semua Skor Final</button>
+  <button class="btn-clear" onclick="clearAll()">🗑 Hapus Semua</button>
+  <span class="copy-feedback" id="copy-feedback"></span>
+</div>
+
+<script>
+  const ROWS = 40;
+  const values = new Array(ROWS).fill(null);
+
+  // ── Excel RANK(val, arr, 0): descending rank, ties share best rank
+  // = count of values strictly greater than val, + 1
+  function excelRank(val, arr) {
+    let count = 0;
+    for (const x of arr) { if (x > val) count++; }
+    return count + 1;
+  }
+
+  // ── Core formula — mirrors the spreadsheet exactly
+  function calcScore(val, allVals) {
+    // v = only numeric entries > 0 (nilai 0 dianggap kosong/tidak ikut perhitungan)
+    const v = allVals.filter(x => x !== null && !isNaN(x) && x > 0);
+    if (v.length === 0) return null;
+
+    const n = v.length;
+    const sorted_desc = [...v].sort((a, b) => b - a); // largest first
+    const sorted_asc  = [...v].sort((a, b) => a - b); // smallest first
+
+    // RANK(val, v, 0) — descending, ties share best rank
+    const rank = excelRank(val, v);
+
+    // MAX(v)
+    const maxV = sorted_desc[0];
+
+    // LARGE(v, 10) — 10th largest; if fewer than 10 values, take the smallest
+    const large10 = sorted_desc[Math.min(9, n - 1)];
+
+    // MIN(v)
+    const minV = sorted_asc[0];
+
+    // SMALL(v, COUNTA(v)-9) with IFERROR(…, MIN(v))
+    // = (n-9)th smallest value; if index out of range → MIN(v)
+    const smallIdx = n - 9 - 1; // 0-based index in sorted_asc
+    const small_n9 = (smallIdx >= 0 && smallIdx < n) ? sorted_asc[smallIdx] : minV;
+
+    let score;
+    if (rank <= 10) {
+      // Top-10 group: scale to 94–98
+      // denom = IF(MAX=LARGE10, 1, MAX-LARGE10)
+      const denom = (maxV === large10) ? 1 : (maxV - large10);
+      score = 94 + (val - large10) / denom * 4; // (98-94)=4
+    } else {
+      // Rest: scale to 80–93
+      // denom = IF(SMALL(n-9)=MIN, 1, SMALL(n-9)-MIN)
+      const denom = (small_n9 === minV) ? 1 : (small_n9 - minV);
+      score = 80 + (val - minV) / denom * 13; // (93-80)=13
+    }
+
+    return Math.round(score);
+  }
+
+  // ── Copy all 40 results to clipboard (empty string for zero/blank rows)
+  function copyResults() {
+    const lines = [];
+    for (let i = 0; i < ROWS; i++) {
+      const v = values[i];
+      if (v === null || v === 0) {
+        lines.push(''); // blank row — preserves position in spreadsheet
+      } else {
+        const score = calcScore(v, values);
+        lines.push(score !== null ? String(score) : '');
+      }
+    }
+    // Trim trailing empty lines (optional: keep all 40 for exact position)
+    const text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      const fb  = document.getElementById('copy-feedback');
+      btn.textContent = '✅ Tersalin!';
+      btn.classList.add('copied');
+      fb.textContent = '— Paste langsung ke Excel / Google Sheets';
+      fb.style.display = 'inline';
+      setTimeout(() => {
+        btn.textContent = '📋 Copy Semua Skor Final';
+        btn.classList.remove('copied');
+        fb.style.display = 'none';
+      }, 2500);
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    });
+  }
+
+  // ── Build table rows
+  function buildTable() {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
+    for (let i = 0; i < ROWS; i++) {
+      const tr = document.createElement('tr');
+      tr.id = `row-${i}`;
+      tr.innerHTML = `
+        <td class="num-cell">${i + 1}</td>
+        <td class="input-cell">
+          <input type="number" id="inp-${i}" placeholder="—"
+            oninput="handleInput(${i}, this.value)"
+            onkeydown="handleKeyNav(event,${i})"
+            onpaste="handleCellPaste(event,${i})"
+            onwheel="this.blur()"
+            value="${values[i] !== null ? values[i] : ''}">
+        </td>
+        <td class="result-cell" id="res-${i}"><span class="result-empty">—</span></td>
+      `;
+      tbody.appendChild(tr);
+    }
+    recalc();
+  }
+
+  // ── Arrow / Enter key navigation
+  function handleKeyNav(e, idx) {
+    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById(`inp-${idx + 1}`)?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      document.getElementById(`inp-${idx - 1}`)?.focus();
+    }
+  }
+
+  // ── Paste directly into a cell (multi-row)
+  function handleCellPaste(e, startIdx) {
+    const raw = (e.clipboardData || window.clipboardData).getData('text');
+    const parsed = parseLines(raw);
+    if (parsed.length <= 1) return; // single value: browser handles normally
+    e.preventDefault();
+    fillFromArray(parsed, startIdx);
+    showFeedback(`✅ ${parsed.filter(v => v !== null).length} nilai ditempelkan mulai baris ${startIdx + 1}`, false);
+  }
+
+  // ── Parse pasted text: each line = one value
+  function parseLines(text) {
+    return text.split(/\r?\n/)
+      .map(l => l.trim().replace(',', '.'))
+      .map(l => {
+        if (l === '' || l === '-') return null;
+        const n = parseFloat(l);
+        return isNaN(n) ? null : n;
+      });
+  }
+
+  // ── Fill values[] from array, starting at startIdx
+  function fillFromArray(arr, startIdx) {
+    arr.forEach((v, i) => {
+      const idx = startIdx + i;
+      if (idx >= ROWS) return;
+      values[idx] = v;
+      const inp = document.getElementById(`inp-${idx}`);
+      if (!inp) return;
+      inp.value = v !== null ? v : '';
+      inp.classList.add('just-filled');
+      setTimeout(() => inp.classList.remove('just-filled'), 1200);
+    });
+    recalc();
+  }
+
+  // ── Textarea apply button
+  function applyPaste() {
+    const raw = document.getElementById('paste-area').value.trim();
+    if (!raw) { showFeedback('⚠️ Belum ada data untuk diterapkan', true); return; }
+    const parsed = parseLines(raw);
+    const validCount = parsed.filter(v => v !== null).length;
+    if (validCount === 0) { showFeedback('⚠️ Tidak ada nilai angka yang terbaca', true); return; }
+
+    // Reset all rows first
+    for (let i = 0; i < ROWS; i++) {
+      values[i] = null;
+      const inp = document.getElementById(`inp-${i}`);
+      if (inp) inp.value = '';
+    }
+    fillFromArray(parsed, 0);
+
+    const extra = parsed.length > ROWS ? ` (${parsed.length - ROWS} baris diabaikan)` : '';
+    showFeedback(`✅ ${validCount} nilai berhasil diterapkan${extra}`, parsed.length > ROWS);
+    document.getElementById('paste-area').value = '';
+  }
+
+  function showFeedback(msg, isError) {
+    const el = document.getElementById('paste-feedback');
+    el.textContent = msg;
+    el.className = 'paste-feedback' + (isError ? ' error' : '');
+    el.style.display = 'inline';
+    setTimeout(() => el.style.display = 'none', 3500);
+  }
+
+  // ── Single cell manual input
+  function handleInput(idx, val) {
+    const num = parseFloat(val);
+    values[idx] = (val === '' || isNaN(num)) ? null : num;
+    recalc();
+  }
+
+  // ── Recalculate & render all result cells
+  function recalc() {
+    for (let i = 0; i < ROWS; i++) {
+      const cell = document.getElementById(`res-${i}`);
+      const v = values[i];
+      // nilai null atau 0 → tampilkan kosong, tidak dihitung
+      if (v === null || v === 0) { cell.innerHTML = '<span class="result-empty">—</span>'; continue; }
+
+      const score = calcScore(v, values);
+      if (score === null) { cell.innerHTML = '<span class="result-empty">—</span>'; continue; }
+
+      const isTop = excelRank(v, values.filter(x => x !== null && x > 0)) <= 10;
+      cell.innerHTML = `<span class="result-badge ${isTop ? 'result-top' : 'result-mid'}">${score}</span>`;
+    }
+    updateStats();
+  }
+
+  // ── Stats bar
+  function updateStats() {
+    const nums = values.filter(v => v !== null && v > 0);
+    document.getElementById('stat-count').textContent = nums.length;
+    if (nums.length === 0) {
+      ['stat-max','stat-min','stat-avg'].forEach(id => document.getElementById(id).textContent = '—');
+      return;
+    }
+    document.getElementById('stat-max').textContent = Math.max(...nums);
+    document.getElementById('stat-min').textContent = Math.min(...nums);
+    const scores = nums.map(v => calcScore(v, values));
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    document.getElementById('stat-avg').textContent = avg.toFixed(1);
+  }
+
+  function clearAll() {
+    if (!confirm('Hapus semua nilai yang sudah dimasukkan?')) return;
+    for (let i = 0; i < ROWS; i++) values[i] = null;
+    document.getElementById('paste-area').value = '';
+    buildTable();
+  }
+
+  buildTable();
+</script>
+</body>
+</html>
